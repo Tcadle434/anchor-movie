@@ -3,6 +3,7 @@ import { Program } from '@coral-xyz/anchor';
 import { AnchorMovie } from '../target/types/anchor_movie';
 import { assert, expect } from 'chai';
 import { PublicKey } from '@solana/web3.js';
+import { getAssociatedTokenAddress, getAccount } from '@solana/spl-token';
 
 describe('anchor-movie', () => {
   // Configure the client to use the local cluster.
@@ -17,26 +18,41 @@ describe('anchor-movie', () => {
     rating: 5,
   };
 
-  const [moviePda] = anchor.web3.PublicKey.findProgramAddressSync(
+  const [movie_pda] = anchor.web3.PublicKey.findProgramAddressSync(
     [Buffer.from(movie.title), provider.wallet.publicKey.toBuffer()],
-    new PublicKey('5oYVhrRPbeUzBcvWADXXCgYSo9cF68RRdS4zyLoJe9Pe')
+    program.programId
   );
 
+  const [mint] = anchor.web3.PublicKey.findProgramAddressSync(
+    [Buffer.from('mint')],
+    program.programId
+  );
+
+  it('Initializes the reward token', async () => {
+    const tx = await program.methods.initializeTokenMint().rpc();
+  });
+
   it('Movie review is added`', async () => {
-    // Add your test here.
-    console.log('testing movie review');
+    const tokenAccount = await getAssociatedTokenAddress(
+      mint,
+      provider.wallet.publicKey
+    );
+
     const tx = await program.methods
       .addMovieReview(movie.title, movie.description, movie.rating)
       .accounts({
-        movieReview: moviePda,
+        tokenAccount: tokenAccount,
       })
       .rpc();
 
-    const account = await program.account.movieAccountState.fetch(moviePda);
+    const account = await program.account.movieAccountState.fetch(movie_pda);
     expect(movie.title === account.title);
     expect(movie.rating === account.rating);
     expect(movie.description === account.description);
     expect(account.reviewer === provider.wallet.publicKey);
+
+    const userAta = await getAccount(provider.connection, tokenAccount);
+    expect(Number(userAta.amount)).to.equal((10 * 10) ^ 6);
   });
 
   it('Movie review is updated`', async () => {
@@ -45,12 +61,9 @@ describe('anchor-movie', () => {
 
     const tx = await program.methods
       .updateMovieReview(movie.title, newDescription, newRating)
-      .accounts({
-        movieReview: moviePda,
-      })
       .rpc();
 
-    const account = await program.account.movieAccountState.fetch(moviePda);
+    const account = await program.account.movieAccountState.fetch(movie_pda);
     expect(movie.title === account.title);
     expect(newRating === account.rating);
     expect(newDescription === account.description);
@@ -58,11 +71,6 @@ describe('anchor-movie', () => {
   });
 
   it('Deletes a movie review', async () => {
-    const tx = await program.methods
-      .deleteMovieReview(movie.title)
-      .accounts({
-        movieReview: moviePda,
-      })
-      .rpc();
+    const tx = await program.methods.deleteMovieReview(movie.title).rpc();
   });
 });
