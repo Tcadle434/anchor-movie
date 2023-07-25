@@ -1,14 +1,14 @@
 [features]
-seeds = false
+seeds = true
 skip-lint = false
 [programs.localnet]
-anchor_movie = "5oYVhrRPbeUzBcvWADXXCgYSo9cF68RRdS4zyLoJe9Pe"
+anchor_movie = "H1sxQUz8KLS2uy4j5peGUc8FvcPfoZeiAqt9iyT4XRuT"
 
 [registry]
 url = "https://api.apr.dev"
 
 [provider]
-cluster = "Localnet"
+cluster = "devnet"
 wallet = "/Users/thomascadle/.config/solana/id.json"
 
 [scripts]
