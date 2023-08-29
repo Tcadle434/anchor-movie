@@ -27,6 +27,13 @@ pub mod anchor_movie {
         movie_comment_counter.counter = 0;
         msg!("Counter: {}", movie_comment_counter.counter);
 
+        emit!(MovieCreationEvent {
+            title: movie_review.title.clone(),
+            description: movie_review.description.clone(),
+            rating: movie_review.rating,
+            label: "Movie Created".to_string(),
+        });
+
         mint_to(
             CpiContext::new_with_signer(
                 ctx.accounts.token_program.to_account_info(),
@@ -61,6 +68,10 @@ pub mod anchor_movie {
         movie_comment.count = movie_comment_counter.counter;
 
         movie_comment_counter.counter += 1;
+        emit!(CounterEvent {
+            data: movie_comment_counter.counter,
+            label: "Comment Counter".to_string(),
+        });
 
         mint_to(
             CpiContext::new_with_signer(
@@ -256,6 +267,22 @@ pub struct MovieComment {
     pub commenter: Pubkey, // 32
     pub comment: String,   // 4 + len()
     pub count: u64,        // 8
+}
+
+#[event]
+pub struct MovieCreationEvent {
+    pub title: String,
+    pub description: String,
+    pub rating: u8,
+    #[index]
+    pub label: String,
+}
+
+#[event]
+pub struct CounterEvent {
+    pub data: u64,
+    #[index]
+    pub label: String,
 }
 
 #[error_code]
